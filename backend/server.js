@@ -10,16 +10,13 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 
 import { initDatabase, saveDatabase } from './db/database.js';
-import matchesRouter from './routes/matches.js';
+import createMatchesRouter from './routes/matches.js';
 import { setupSocket } from './socket/liveUpdates.js';
 import { Poller } from './services/poller.js';
-import { MockProvider } from './providers/MockProvider.js';
-import { SportsDbProvider } from './providers/SportsDbProvider.js';
-import { LnrProvider } from './providers/LnrProvider.js';
+import { HybridProvider } from './providers/HybridProvider.js';
 
 // --- Configuration ---
 const PORT = process.env.PORT || 3001;
-const PROVIDER_TYPE = process.env.DATA_PROVIDER || 'mock';
 const API_KEY = process.env.SPORTSDB_API_KEY || '123';
 
 async function main() {
@@ -42,31 +39,20 @@ async function main() {
   // Base de données (async init pour sql.js)
   await initDatabase();
 
-  // Routes REST
-  app.use('/api', matchesRouter);
+  // Data Provider (Hybrid: LNR for Top14, ESPN for others)
+  const provider = new HybridProvider();
+  console.log(`[Serveur] Fournisseur de données: Hybrid (LNR + ESPN)`);
+
+  // Routes REST (provider injected for live standings fetch)
+  app.use('/api', createMatchesRouter(provider));
 
   // Route de santé
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', provider: PROVIDER_TYPE, timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', provider: 'hybrid', timestamp: new Date().toISOString() });
   });
 
   // Socket.IO
   const socketHandler = setupSocket(io);
-
-  // Data Provider
-  let provider;
-  switch (PROVIDER_TYPE) {
-    case 'lnr':
-      provider = new LnrProvider();
-      break;
-    case 'sportsdb':
-      provider = new SportsDbProvider(API_KEY);
-      break;
-    default:
-      provider = new MockProvider();
-  }
-
-  console.log(`[Serveur] Fournisseur de données: ${PROVIDER_TYPE}`);
 
   // Poller
   const poller = new Poller(provider, (data) => {
@@ -102,7 +88,7 @@ async function main() {
     console.log(`  ───────────────────`);
     console.log(`  Serveur:  http://localhost:${PORT}`);
     console.log(`  API:      http://localhost:${PORT}/api/matches`);
-    console.log(`  Provider: ${PROVIDER_TYPE}\n`);
+    console.log(`  Provider: Hybrid (LNR + ESPN)\n`);
   });
 
   // Arrêt propre

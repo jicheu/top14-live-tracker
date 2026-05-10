@@ -46,6 +46,7 @@ const fr = {
     title: 'Top 14 — Scores en direct',
     subtitle: 'Championnat de France de Rugby',
     round: 'Journée',
+    roundShort: 'J',
     liveNow: 'En direct',
     noLiveMatches: 'Aucun match en direct pour le moment',
     allMatches: 'Tous les matchs',
@@ -59,8 +60,40 @@ const fr = {
     connecting: 'Connexion au serveur...',
     connected: 'Connecté',
     disconnected: 'Déconnecté',
+    views: {
+      live: 'En direct',
+      results: 'Résultats',
+      standings: 'Classement'
+    },
     venue: 'Stade',
     minute: 'min',
+    menu: 'Menu',
+    toggleTheme: 'Changer le thème',
+    settings: 'Paramètres',
+    theme: 'Apparence',
+    themeLight: 'Clair',
+    themeDark: 'Sombre',
+    themeAuto: 'Auto',
+    comingSoon: 'Bientôt disponible',
+    comingSoonDetail: 'Les données pour cette compétition ne sont pas encore disponibles.',
+  },
+
+  // Liste des compétitions
+  competitions: {
+    top14: 'Top 14',
+    prod2: 'Pro D2',
+    premiership: 'Premiership Rugby',
+    urc: 'United Rugby Championship',
+    super_rugby: 'Super Rugby Pacific',
+    mlr: 'Major League Rugby',
+    english_championship: 'English Championship',
+    irish_championship: 'Irish Championship',
+    six_nations_male: '6 Nations (H)',
+    six_nations_female: '6 Nations (F)',
+    rugby_championship: 'The Rugby Championship',
+    european_championship: 'European Championship',
+    champions_cup: 'Champions Cup',
+    challenge_cup: 'Challenge Cup',
   },
 };
 

@@ -174,6 +174,9 @@ export class LnrProvider extends DataProvider {
       away_1h: 0,
       home_2h: 0,
       away_2h: 0,
+      home_tries: 0,
+      away_tries: 0,
+      competition: 'top14',
       updated_at: new Date().toISOString(),
       // Keep the detail link for fetching score events
       _detail_link: lnrMatch.link,
@@ -291,6 +294,8 @@ export class LnrProvider extends DataProvider {
   _cacheEvents(match, gameFacts) {
     const events = [];
     const eventIds = new Set();
+    let homeTries = 0;
+    let awayTries = 0;
 
     for (const fact of gameFacts) {
       const eventType = EVENT_TYPE_MAP[fact.slugSubType];
@@ -306,6 +311,12 @@ export class LnrProvider extends DataProvider {
       const detail = points > 0
         ? `${playerName} - ${fact.subtype} (${points} pts)`
         : `${playerName} - ${fact.subtype}`;
+
+      // Count tries
+      if (eventType === 'essai') {
+        if (isHome) homeTries++;
+        else awayTries++;
+      }
 
       events.push({
         id: fact.id,
@@ -325,6 +336,10 @@ export class LnrProvider extends DataProvider {
 
       eventIds.add(fact.id);
     }
+
+    // Update match with try counts
+    match.home_tries = homeTries;
+    match.away_tries = awayTries;
 
     // Store the event ids set for change detection
     this.previousEvents.set(match.id, { events, eventIds });

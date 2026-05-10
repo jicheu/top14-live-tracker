@@ -35,6 +35,11 @@ export class Poller {
     }
   }
 
+  setProvider(newProvider) {
+    this.provider = newProvider;
+    this.isFirstRun = true;
+  }
+
   async _loadTeams() {
     try {
       const teams = await this.provider.fetchTeams();
@@ -53,6 +58,13 @@ export class Poller {
 
       // Mettre à jour la base de données
       for (const match of matches) {
+        // Upsert teams embedded in match data (ESPN matches carry team info inline)
+        if (match.home_team_name) {
+          upsertTeam({ id: match.home_team_id, name: match.home_team_name, badge_url: match.home_team_badge || '' });
+        }
+        if (match.away_team_name) {
+          upsertTeam({ id: match.away_team_id, name: match.away_team_name, badge_url: match.away_team_badge || '' });
+        }
         upsertMatch(match);
       }
 
@@ -72,6 +84,9 @@ export class Poller {
 
       // Notifier le serveur des changements
       if (changes.length > 0 || this.isFirstRun) {
+        // Note: getAllMatches() is now competition-aware in DB, 
+        // but here we might need all matches or filter.
+        // For simplicity, we fetch all matches and broadcast.
         const allMatches = getAllMatches();
         this.onUpdate({
           matches: allMatches,

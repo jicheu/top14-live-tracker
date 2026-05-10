@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS matches (
     away_1h INTEGER DEFAULT 0,
     home_2h INTEGER DEFAULT 0,
     away_2h INTEGER DEFAULT 0,
+    home_tries INTEGER DEFAULT 0,
+    away_tries INTEGER DEFAULT 0,
+    competition TEXT DEFAULT 'top14',
     updated_at TEXT
 );
 

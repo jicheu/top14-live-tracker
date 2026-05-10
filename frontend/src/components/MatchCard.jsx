@@ -2,11 +2,12 @@ import React from 'react';
 import fr from '../i18n/fr.js';
 
 export default function MatchCard({ match, onClick, isLive }) {
-  const statusLabel = fr.status[match.status] || match.status;
+  const statusLabel = fr.status[match.status] || (match.status === 'Started' ? fr.ui.liveNow : match.status === 'Match Finished' ? fr.status.FT : match.status);
+  const isFinished = match.status === 'FT' || match.status === 'Match Finished';
 
   return (
     <div
-      className={`match-card ${isLive ? 'match-card--live' : ''} ${match.status === 'FT' ? 'match-card--finished' : ''}`}
+      className={`match-card ${isLive ? 'match-card--live' : ''} ${isFinished ? 'match-card--finished' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -16,6 +17,9 @@ export default function MatchCard({ match, onClick, isLive }) {
       <div className={`match-status status--${match.status}`}>
         {isLive && <span className="live-dot-small"></span>}
         {statusLabel}
+        {match.status === 'NS' && match.round && (
+          <span className="match-round-tag"> — {fr.ui.roundShort}{match.round}</span>
+        )}
       </div>
 
       {/* Teams and scores */}
