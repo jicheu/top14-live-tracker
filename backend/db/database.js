@@ -45,6 +45,13 @@ export async function initDatabase() {
     // Column already exists
   }
 
+  try {
+    db.run("ALTER TABLE matches ADD COLUMN match_clock TEXT DEFAULT ''");
+    console.log("[DB] Migration: Colonne 'match_clock' ajoutée");
+  } catch (err) {
+    // Column already exists
+  }
+
   // Sauvegarder périodiquement
   setInterval(() => saveDatabase(), 30_000);
 
@@ -107,8 +114,8 @@ export function getAllTeams() {
 
 export function upsertMatch(match) {
   runSql(`
-    INSERT OR REPLACE INTO matches (id, home_team_id, away_team_id, score_home, score_away, status, round, match_date, match_time, venue, home_1h, away_1h, home_2h, away_2h, home_tries, away_tries, competition, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO matches (id, home_team_id, away_team_id, score_home, score_away, status, round, match_date, match_time, venue, home_1h, away_1h, home_2h, away_2h, home_tries, away_tries, competition, match_clock, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     match.id, match.home_team_id, match.away_team_id,
     match.score_home, match.score_away, match.status,
@@ -116,6 +123,7 @@ export function upsertMatch(match) {
     match.home_1h, match.away_1h, match.home_2h, match.away_2h,
     match.home_tries || 0, match.away_tries || 0,
     match.competition || 'top14',
+    match.match_clock || '',
     match.updated_at
   ]);
 }

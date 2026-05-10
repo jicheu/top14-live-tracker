@@ -1,8 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import fr from '../i18n/fr.js';
 
+const EVENT_ICON = {
+  essai:          '🏉',
+  transformation: '🎯',
+  penalite:       '🥅',
+  drop:           '💧',
+  carton_jaune:   '🟨',
+  carton_rouge:   '🟥',
+};
+
+// Only show these in the card summary (skip substitutions etc.)
+const SUMMARY_TYPES = new Set(['essai', 'transformation', 'penalite', 'drop', 'carton_jaune', 'carton_rouge']);
+
+function LiveSummary({ match }) {
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const resp = await fetch(`/api/matches/${match.id}`);
+        const data = await resp.json();
+        if (!cancelled) setEvents(data.events || []);
+      } catch (_) {}
+    }
+
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [match.id]);
+
+  const summaryEvents = events.filter(e => SUMMARY_TYPES.has(e.event_type));
+  if (summaryEvents.length === 0) return null;
+
+  const homeEvents = summaryEvents.filter(e => e.team_id === match.home_team_id);
+  const awayEvents = summaryEvents.filter(e => e.team_id === match.away_team_id);
+
+  const renderEvent = (e, i) => (
+    <span key={i} className="live-event-item" title={`${fr.eventType[e.event_type] || e.event_type} — ${e.player}`}>
+      {EVENT_ICON[e.event_type] || '•'}
+      <span className="live-event-minute">{e.minute}'</span>
+      <span className="live-event-player">{e.player}</span>
+    </span>
+  );
+
+  return (
+    <div className="live-summary">
+      <div className="live-summary-col live-summary-home">
+        {homeEvents.map(renderEvent)}
+      </div>
+      <div className="live-summary-divider" />
+      <div className="live-summary-col live-summary-away">
+        {awayEvents.map(renderEvent)}
+      </div>
+    </div>
+  );
+}
+
 export default function MatchCard({ match, onClick, isLive }) {
-  const statusLabel = fr.status[match.status] || (match.status === 'Started' ? fr.ui.liveNow : match.status === 'Match Finished' ? fr.status.FT : match.status);
+  const statusLabel = fr.status[match.status]
+    || (match.status === 'Started' ? fr.ui.liveNow
+      : match.status === 'Match Finished' ? fr.status.FT
+      : match.status);
   const isFinished = match.status === 'FT' || match.status === 'Match Finished';
 
   return (
@@ -13,11 +74,14 @@ export default function MatchCard({ match, onClick, isLive }) {
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
     >
-      {/* Status badge */}
+      {/* Status badge + live clock */}
       <div className={`match-status status--${match.status}`}>
         {isLive && <span className="live-dot-small"></span>}
-        {statusLabel}
-        {match.status === 'NS' && match.round && (
+        <span>{statusLabel}</span>
+        {isLive && match.match_clock && match.match_clock !== 'HT' && (
+          <span className="live-clock">{match.match_clock}</span>
+        )}
+        {match.status === 'NS' && match.round > 0 && (
           <span className="match-round-tag"> — {fr.ui.roundShort}{match.round}</span>
         )}
       </div>
@@ -59,6 +123,9 @@ export default function MatchCard({ match, onClick, isLive }) {
           <span className="team-name">{match.away_team_name}</span>
         </div>
       </div>
+
+      {/* Scoring timeline summary — live only */}
+      {isLive && <LiveSummary match={match} />}
 
       {/* Venue */}
       {match.venue && (

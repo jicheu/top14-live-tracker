@@ -41,6 +41,19 @@ const STATUS_MAP = {
   'STATUS_SUSPENDED':      'PST',
 };
 
+// ESPN event type text → internal type
+const ESPN_EVENT_TYPE_MAP = {
+  'try':           'essai',
+  'conversion':    'transformation',
+  'penalty goal':  'penalite',
+  'drop goal':     'drop',
+  'yellow card':   'carton_jaune',
+  'red card':      'carton_rouge',
+};
+
+// Only these event types appear in the scoring summary
+const SCORING_TYPES = new Set(Object.keys(ESPN_EVENT_TYPE_MAP));
+
 export class EspnProvider extends DataProvider {
   constructor() {
     super();
@@ -70,10 +83,10 @@ export class EspnProvider extends DataProvider {
         // Also fetch the bare scoreboard (catches live matches ESPN might omit from range)
         const currentEvents = await this._fetchScoreboard(league.id);
 
-        // Merge, deduplicate by event id (range first so current overwrites stale data)
+        // Merge, deduplicate by event id (current overwrites range for live data)
         const seen = new Set();
         const merged = [];
-        for (const e of [...rangeEvents, ...currentEvents]) {
+        for (const e of [...currentEvents, ...rangeEvents]) {
           if (!seen.has(e.id)) { seen.add(e.id); merged.push(e); }
         }
 
@@ -88,6 +101,17 @@ export class EspnProvider extends DataProvider {
             allChanges.push({ type: 'score', match });
           }
           this.previousScores.set(match.id, scoreStr);
+        }
+
+        // Extract and store scoring events for live/finished matches
+        for (const rawEvent of merged) {
+          const matchId = `espn-${rawEvent.id}`;
+          const comp = (rawEvent.competitions || [])[0];
+          if (!comp) continue;
+          const scoreEvents = this._extractScoringEvents(comp, matchId);
+          if (scoreEvents.length > 0) {
+            allChanges.push({ type: 'events_full', events: scoreEvents });
+          }
         }
 
         allMatches = allMatches.concat(matches);
@@ -345,6 +369,20 @@ export class EspnProvider extends DataProvider {
       ? dateStr.split('T')[1].substring(0, 8)
       : '00:00:00';
 
+    // Build a live clock string, e.g. "23'", "HT", "2T·5'"
+    let match_clock = '';
+    if (statusState === 'in') {
+      const period = competition.status?.period || 1;
+      const shortDetail = competition.status?.type?.shortDetail || '';
+      if (statusName === 'STATUS_HALFTIME') {
+        match_clock = 'HT';
+      } else if (period >= 2) {
+        match_clock = `2T·${shortDetail}`;   // e.g. "2T·5'"
+      } else {
+        match_clock = shortDetail;           // e.g. "23'"
+      }
+    }
+
     return {
       id: `espn-${event.id}`,
       competition: compKey,
@@ -368,7 +406,45 @@ export class EspnProvider extends DataProvider {
       away_2h: 0,
       home_tries: 0,
       away_tries: 0,
+      match_clock,
       updated_at: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Extract scoring and disciplinary events from ESPN competition.details.
+   * Returns an array suitable for insertScoreEvent().
+   */
+  _extractScoringEvents(competition, matchId) {
+    const details = competition.details || [];
+    const events = [];
+
+    for (const d of details) {
+      const typeText = d.type?.text?.toLowerCase() || '';
+      if (!SCORING_TYPES.has(typeText)) continue;
+
+      const teamId = d.team?.id ? `espn-${d.team.id}` : null;
+      if (!teamId) continue;
+
+      const clockSec = d.clock?.value || 0;
+      const minute = Math.round(clockSec / 60);
+      const half = minute < 42 ? 1 : 2;   // rough 1st/2nd half split
+      const player = d.athletesInvolved?.[0]?.shortName || '';
+      const eventType = ESPN_EVENT_TYPE_MAP[typeText] || typeText;
+
+      events.push({
+        match_id: matchId,
+        team_id:  teamId,
+        player,
+        event_type: eventType,
+        minute,
+        half,
+        detail: typeText,
+      });
+    }
+
+    // Sort chronologically
+    events.sort((a, b) => a.minute - b.minute);
+    return events;
   }
 }
