@@ -1178,3 +1178,118 @@ body {
     font-size: 1.8rem;
   }
 }
+
+/* === Language switcher === */
+.lang-switcher button {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+/* === Standings row — clickable === */
+.standings-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.standings-row:hover {
+  background: var(--color-surface-hover);
+}
+
+/* === Team Form Modal === */
+.team-form-modal {
+  max-width: 460px;
+}
+
+.team-form-header-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.team-form-badge {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.team-form-subtitle {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.team-form-summary {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Sequential W/D/L pill strip */
+.team-form-pills {
+  display: flex;
+  gap: 6px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Form badges (W / D / L) */
+.form-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.form-badge--win  { background: rgba(46, 204, 113, 0.15); color: var(--color-success); }
+.form-badge--draw { background: rgba(142, 154, 165, 0.15); color: var(--color-text-muted); }
+.form-badge--loss { background: rgba(231, 76, 60, 0.15);  color: var(--color-live); }
+
+.team-form-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.team-form-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.85rem;
+  transition: background 0.12s;
+}
+.team-form-row:last-child { border-bottom: none; }
+.team-form-row:hover { background: var(--color-surface-hover); }
+
+.team-form-opponent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.form-opp-badge {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.team-form-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.team-form-date {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

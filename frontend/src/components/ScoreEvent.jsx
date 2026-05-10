@@ -1,10 +1,11 @@
 import React from 'react';
-import fr from '../i18n/fr.js';
+import { useLanguage } from '../i18n/LanguageContext.jsx';
 
 export default function ScoreEvent({ event }) {
-  const typeLabel = fr.eventType[event.event_type] || event.event_type;
-  const icon = fr.eventIcon[event.event_type] || '•';
-  const points = fr.eventPoints[event.event_type];
+  const { t } = useLanguage();
+  const typeLabel = t.eventType[event.event_type] || event.event_type;
+  const icon = t.eventIcon[event.event_type] || '•';
+  const points = t.eventPoints[event.event_type];
 
   return (
     <div className="score-event">

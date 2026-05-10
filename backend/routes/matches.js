@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllMatches, getMatch, getScoreEvents, getCompetitionRounds, getCompetitionDates, getRecommendedRound, getRecommendedDate, getStandings } from '../db/database.js';
+import { getAllMatches, getMatch, getScoreEvents, getCompetitionRounds, getCompetitionDates, getRecommendedRound, getRecommendedDate, getStandings, getTeamRecentMatches } from '../db/database.js';
 
 /**
  * Creates the matches/standings router, optionally injected with a data provider.
@@ -93,6 +93,30 @@ export default function createMatchesRouter(provider) {
       res.json({ standings: standings || [] });
     } catch (err) {
       console.error('[Routes] Erreur GET /standings:', err.message);
+      res.status(500).json({ error: 'Erreur serveur' });
+    }
+  });
+
+  /**
+   * GET /api/team-form
+   * Returns the last 5 finished matches for a team in a competition.
+   *
+   * Query params:
+   *   teamId      – team id (e.g. espn-123 or lnr-456)
+   *   competition – competition key
+   *   limit       – optional, defaults to 5
+   */
+  router.get('/team-form', (req, res) => {
+    try {
+      const { teamId, competition } = req.query;
+      if (!teamId || !competition) {
+        return res.status(400).json({ error: 'teamId and competition are required' });
+      }
+      const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+      const matches = getTeamRecentMatches(teamId, competition, limit);
+      res.json({ matches });
+    } catch (err) {
+      console.error('[Routes] Erreur GET /team-form:', err.message);
       res.status(500).json({ error: 'Erreur serveur' });
     }
   });

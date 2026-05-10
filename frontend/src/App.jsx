@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { socketService } from './services/socket.js';
-import fr from './i18n/fr.js';
+import { useLanguage } from './i18n/LanguageContext.jsx';
 import MatchList from './components/MatchList.jsx';
 import MatchDetailModal from './components/MatchDetailModal.jsx';
 import Sidebar from './components/Sidebar.jsx';
@@ -19,6 +19,7 @@ const UNSUPPORTED_COMPETITIONS = new Set([
 ]);
 
 export default function App() {
+  const { t } = useLanguage();
   const [matches, setMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -32,7 +33,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'auto');
   const [currentView, setCurrentView] = useState('results'); // 'live', 'results', 'standings'
 
-  // Appliquer le thème
+  // Apply theme
   useEffect(() => {
     const applyTheme = (t) => {
       let activeTheme = t;
@@ -53,7 +54,7 @@ export default function App() {
     }
   }, [theme]);
 
-  // Chargement initial via REST
+  // Initial REST fetch
   useEffect(() => {
     if (UNSUPPORTED_COMPETITIONS.has(currentCompetition)) {
       setMatches([]);
@@ -67,9 +68,6 @@ export default function App() {
         setLoading(true);
         let url = `/api/matches?competition=${currentCompetition}`;
 
-        // Determine navigation mode from what we already know about this competition.
-        // availableRounds is populated after the first fetch; before that, default to
-        // round-based for top14 (the only round-based competition).
         const isRoundBased = availableRounds.some(r => r > 0) || currentCompetition === 'top14';
 
         if (currentView === 'results') {
@@ -105,38 +103,30 @@ export default function App() {
     setCurrentDate(null);
   }, []);
 
-  // Connexion Socket.IO pour les mises à jour en temps réel
+  // Socket.IO for real-time updates
   useEffect(() => {
     socketService.onConnect(() => {
       setConnected(true);
-      console.log('[Socket] Connecté');
     });
 
     socketService.onDisconnect(() => {
       setConnected(false);
-      console.log('[Socket] Déconnecté');
     });
 
     socketService.onMatchesUpdate((data) => {
-      // Filtrer les matchs pour la compétition et le round actuels
-      // En vue "live", on ignore le filtre de round
       const filteredMatches = (data.matches || []).filter(m => 
         m.competition === currentCompetition && 
         (currentView === 'live' || !currentRound || m.round === currentRound)
       );
       setMatches(filteredMatches);
 
-      // Mettre à jour le match sélectionné si ouvert et s'il appartient à cette compétition/round
       if (selectedMatch) {
         const updated = filteredMatches.find(m => m.id === selectedMatch.id);
         if (updated) setSelectedMatch(updated);
       }
     });
 
-    socketService.onScoreEvent((event) => {
-      // Optionnel: On pourrait filtrer les événements ici si on veut
-      // console.log('[Socket] Event reçu:', event);
-    });
+    socketService.onScoreEvent((_event) => {});
 
     return () => {
       socketService.removeAllListeners();
@@ -170,7 +160,7 @@ export default function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <button className="burger-menu" onClick={toggleSidebar} aria-label={fr.ui.menu}>
+          <button className="burger-menu" onClick={toggleSidebar} aria-label={t.ui.menu}>
             <div className="burger-line"></div>
             <div className="burger-line"></div>
             <div className="burger-line"></div>
@@ -178,15 +168,15 @@ export default function App() {
           <div className="header-content">
             <h1 className="app-title">
               <span className="title-icon">🏉</span>
-              {fr.competitions[currentCompetition]}
+              {t.competitions[currentCompetition]}
             </h1>
-            <p className="app-subtitle">{fr.ui.subtitle}</p>
+            <p className="app-subtitle">{t.ui.subtitle}</p>
           </div>
         </div>
         <div className="header-right">
           <div className={`connection-status ${connected ? 'status-connected' : 'status-disconnected'}`}>
             <span className="status-dot"></span>
-            {connected ? fr.ui.connected : fr.ui.disconnected}
+            {connected ? t.ui.connected : t.ui.disconnected}
           </div>
         </div>
       </header>
@@ -216,13 +206,13 @@ export default function App() {
       <main className="app-main">
         {loading ? (
           <div className="loading">
-            <p>{fr.ui.connecting}</p>
+            <p>{t.ui.connecting}</p>
           </div>
         ) : UNSUPPORTED_COMPETITIONS.has(currentCompetition) ? (
           <div className="coming-soon">
             <div className="coming-soon-icon">🚧</div>
-            <h2 className="coming-soon-title">{fr.ui.comingSoon}</h2>
-            <p className="coming-soon-detail">{fr.ui.comingSoonDetail}</p>
+            <h2 className="coming-soon-title">{t.ui.comingSoon}</h2>
+            <p className="coming-soon-detail">{t.ui.comingSoonDetail}</p>
           </div>
         ) : (
           <>
@@ -230,35 +220,31 @@ export default function App() {
               const liveMatches = matches.filter(m => ['1H', 'HT', '2H', 'Started'].includes(m.status));
               
               if (liveMatches.length > 0) {
-                // Show live matches
                 return (
                   <MatchList 
                     matches={liveMatches} 
                     onSelectMatch={handleSelectMatch} 
-                    emptyMessage={fr.ui.noLiveMatches}
+                    emptyMessage={t.ui.noLiveMatches}
                   />
                 );
               }
               
-              // No live matches - show next upcoming day (today or future only)
+              // No live matches — show next upcoming day (today or future only)
               const today = new Date().toISOString().split('T')[0];
               const upcomingMatches = matches
                 .filter(m => m.status === 'NS' && m.match_date && m.match_date >= today)
                 .sort((a, b) => {
-                  // Sort by date first, then time
                   const dateCompare = a.match_date.localeCompare(b.match_date);
                   if (dateCompare !== 0) return dateCompare;
                   return (a.match_time || '').localeCompare(b.match_time || '');
                 });
               
               if (upcomingMatches.length > 0) {
-                // Get matches for the earliest upcoming date only
                 const nextDate = upcomingMatches[0].match_date;
                 const nextDayMatches = upcomingMatches.filter(m => m.match_date === nextDate);
                 
-                // Format date nicely
                 const dateObj = new Date(nextDate + 'T00:00:00');
-                const formattedDate = dateObj.toLocaleDateString('fr-FR', { 
+                const formattedDate = dateObj.toLocaleDateString(t.ui.locale, { 
                   weekday: 'long', 
                   day: 'numeric', 
                   month: 'long' 
@@ -267,7 +253,7 @@ export default function App() {
                 return (
                   <div className="upcoming-forecast">
                     <h2 className="section-title forecast-title">
-                      Prochains matchs — {formattedDate}
+                      {t.ui.upcomingMatches} — {formattedDate}
                     </h2>
                     <MatchList 
                       matches={nextDayMatches} 
@@ -281,7 +267,7 @@ export default function App() {
               // No matches at all
               return (
                 <div className="no-matches">
-                  <p>{fr.ui.noLiveMatches}</p>
+                  <p>{t.ui.noLiveMatches}</p>
                 </div>
               );
             })()}
@@ -289,7 +275,7 @@ export default function App() {
               <MatchList 
                 matches={matches.filter(m => !['1H', 'HT', '2H', 'Started'].includes(m.status))} 
                 onSelectMatch={handleSelectMatch} 
-                emptyMessage="Aucun match trouvé pour cette journée"
+                emptyMessage={t.ui.noMatchesForDay}
               />
             )}
             {currentView === 'standings' && (
@@ -299,7 +285,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Modal détail match */}
+      {/* Match detail modal */}
       {selectedMatch && (
         <MatchDetailModal match={selectedMatch} onClose={handleCloseModal} />
       )}

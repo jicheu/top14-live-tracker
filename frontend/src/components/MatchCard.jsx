@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import fr from '../i18n/fr.js';
+import { useLanguage } from '../i18n/LanguageContext.jsx';
 
 const EVENT_ICON = {
   essai:          '🏉',
@@ -14,6 +14,7 @@ const EVENT_ICON = {
 const SUMMARY_TYPES = new Set(['essai', 'transformation', 'penalite', 'drop', 'carton_jaune', 'carton_rouge']);
 
 function LiveSummary({ match }) {
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ function LiveSummary({ match }) {
   const awayEvents = summaryEvents.filter(e => e.team_id === match.away_team_id);
 
   const renderEvent = (e, i) => (
-    <span key={i} className="live-event-item" title={`${fr.eventType[e.event_type] || e.event_type} — ${e.player}`}>
+    <span key={i} className="live-event-item" title={`${t.eventType[e.event_type] || e.event_type} — ${e.player}`}>
       {EVENT_ICON[e.event_type] || '•'}
       <span className="live-event-minute">{e.minute}'</span>
       <span className="live-event-player">{e.player}</span>
@@ -60,9 +61,10 @@ function LiveSummary({ match }) {
 }
 
 export default function MatchCard({ match, onClick, isLive }) {
-  const statusLabel = fr.status[match.status]
-    || (match.status === 'Started' ? fr.ui.liveNow
-      : match.status === 'Match Finished' ? fr.status.FT
+  const { t } = useLanguage();
+  const statusLabel = t.status[match.status]
+    || (match.status === 'Started' ? t.ui.liveNow
+      : match.status === 'Match Finished' ? t.status.FT
       : match.status);
   const isFinished = match.status === 'FT' || match.status === 'Match Finished';
 
@@ -82,7 +84,7 @@ export default function MatchCard({ match, onClick, isLive }) {
           <span className="live-clock">{match.match_clock}</span>
         )}
         {match.status === 'NS' && match.round > 0 && (
-          <span className="match-round-tag"> — {fr.ui.roundShort}{match.round}</span>
+          <span className="match-round-tag"> — {t.ui.roundShort}{match.round}</span>
         )}
       </div>
 

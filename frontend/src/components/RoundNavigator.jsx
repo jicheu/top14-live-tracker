@@ -1,11 +1,5 @@
 import React from 'react';
-import fr from '../i18n/fr.js';
-
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
-}
+import { useLanguage } from '../i18n/LanguageContext.jsx';
 
 /**
  * Navigation bar for both round-based (Top14) and date-based (ESPN) competitions.
@@ -28,6 +22,14 @@ export default function RoundNavigator({
   availableDates,
   onDateChange,
 }) {
+  const { t } = useLanguage();
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString(t.ui.locale, { weekday: 'short', day: 'numeric', month: 'long' });
+  }
+
   if (mode === 'date') {
     const dates = availableDates || [];
     if (dates.length === 0 || !currentDate) return null;
@@ -42,7 +44,6 @@ export default function RoundNavigator({
           className="round-nav-btn"
           onClick={() => canGoPrev && onDateChange(dates[idx - 1])}
           disabled={!canGoPrev}
-          aria-label="Jour précédent"
         >
           &larr;
         </button>
@@ -53,7 +54,6 @@ export default function RoundNavigator({
           className="round-nav-btn"
           onClick={() => canGoNext && onDateChange(dates[idx + 1])}
           disabled={!canGoNext}
-          aria-label="Jour suivant"
         >
           &rarr;
         </button>
@@ -75,19 +75,17 @@ export default function RoundNavigator({
         className="round-nav-btn"
         onClick={() => canGoPrev && onRoundChange(rounds[currentIndex - 1])}
         disabled={!canGoPrev}
-        aria-label="Round précédent"
       >
         &larr;
       </button>
       <div className="round-display">
-        <span className="round-label">{fr.ui.round}</span>
+        <span className="round-label">{t.ui.round}</span>
         <span className="round-number">{currentRound}</span>
       </div>
       <button
         className="round-nav-btn"
         onClick={() => canGoNext && onRoundChange(rounds[currentIndex + 1])}
         disabled={!canGoNext}
-        aria-label="Round suivant"
       >
         &rarr;
       </button>

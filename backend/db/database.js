@@ -452,3 +452,25 @@ export function getScoreEvents(matchId) {
 export function clearScoreEvents(matchId) {
   runSql('DELETE FROM score_events WHERE match_id = ?', [matchId]);
 }
+
+// --- Team form ---
+
+/**
+ * Returns the last `limit` finished matches for a team in a given competition.
+ * Each row includes home/away team names and badge URLs.
+ */
+export function getTeamRecentMatches(teamId, competition, limit = 5) {
+  return queryAll(`
+    SELECT m.*,
+      ht.name  AS home_team_name, ht.badge_url  AS home_team_badge,
+      at2.name AS away_team_name, at2.badge_url AS away_team_badge
+    FROM matches m
+    JOIN teams ht  ON m.home_team_id = ht.id
+    JOIN teams at2 ON m.away_team_id = at2.id
+    WHERE (m.home_team_id = ? OR m.away_team_id = ?)
+      AND m.competition = ?
+      AND m.status IN ('FT', 'Match Finished')
+    ORDER BY m.match_date DESC, m.match_time DESC
+    LIMIT 5
+  `, [teamId, teamId, competition]);
+}
