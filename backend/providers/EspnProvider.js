@@ -21,14 +21,24 @@ const LEAGUE_MAP = {
 };
 
 const STATUS_MAP = {
-  'STATUS_FINAL':        'FT',
-  'STATUS_FULL_TIME':    'FT',
-  'STATUS_IN_PROGRESS':  '1H',
-  'STATUS_HALFTIME':     'HT',
-  'STATUS_SCHEDULED':    'NS',
-  'STATUS_TBD':          'NS',
-  'STATUS_POSTPONED':    'PST',
-  'STATUS_CANCELED':     'CANC',
+  // Finished
+  'STATUS_FINAL':          'FT',
+  'STATUS_FULL_TIME':      'FT',
+  'STATUS_END_OF_GAME':    'FT',
+  // Live
+  'STATUS_IN_PROGRESS':    '1H',
+  'STATUS_FIRST_HALF':     '1H',
+  'STATUS_SECOND_HALF':    '2H',
+  'STATUS_OVERTIME':       '2H',
+  'STATUS_HALFTIME':       'HT',
+  'STATUS_END_PERIOD':     'HT',
+  // Pre-match
+  'STATUS_SCHEDULED':      'NS',
+  'STATUS_TBD':            'NS',
+  // Misc
+  'STATUS_POSTPONED':      'PST',
+  'STATUS_CANCELED':       'CANC',
+  'STATUS_SUSPENDED':      'PST',
 };
 
 export class EspnProvider extends DataProvider {
@@ -316,7 +326,12 @@ export class EspnProvider extends DataProvider {
     const away = competitors.find(c => c.homeAway === 'away') || competitors[1];
 
     const statusName = competition.status?.type?.name || 'STATUS_SCHEDULED';
-    const status = STATUS_MAP[statusName] || 'NS';
+    const statusState = competition.status?.type?.state || 'pre';
+    const statusCompleted = competition.status?.type?.completed ?? false;
+
+    // Use explicit map first; fall back to state/completed for unknown ESPN status names
+    const status = STATUS_MAP[statusName]
+      ?? (statusCompleted ? 'FT' : statusState === 'in' ? '1H' : 'NS');
 
     const scoreHome = parseInt(home.score) || 0;
     const scoreAway = parseInt(away.score) || 0;
