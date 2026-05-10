@@ -287,7 +287,7 @@ export default function App() {
             })()}
             {currentView === 'results' && (
               <MatchList 
-                matches={matches} 
+                matches={matches.filter(m => !['1H', 'HT', '2H', 'Started'].includes(m.status))} 
                 onSelectMatch={handleSelectMatch} 
                 emptyMessage="Aucun match trouvé pour cette journée"
               />
