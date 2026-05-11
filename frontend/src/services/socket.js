@@ -1,6 +1,10 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3001';
+// Connect to the same origin that served the page.
+// - In dev (Vite proxy): window.location is localhost:5173, proxy forwards to localhost:3001
+// - In snap/production: window.location is localhost:3002 (served directly by Express)
+// Using window.location.origin handles both cases without hardcoding a port.
+const SOCKET_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001';
 
 const socket = io(SOCKET_URL, {
   autoConnect: true,
