@@ -104,6 +104,10 @@ const zhTW = {
     champions_cup:        '歐洲冠軍盃',
     challenge_cup:        '歐洲挑戰盃',
   },
+  youtube: {
+    watchHighlights: '📺 觀看摘要',
+    loading: '📺 摘要即將推出…',
+  },
 };
 
 export default zhTW;

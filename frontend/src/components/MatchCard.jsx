@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext.jsx';
+import YouTubeLink from './YouTubeLink.jsx';
 
 const EVENT_ICON = {
   essai:          '🏉',
@@ -128,6 +129,9 @@ export default function MatchCard({ match, onClick, isLive }) {
 
       {/* Scoring timeline summary — live only */}
       {isLive && <LiveSummary match={match} />}
+
+      {/* YouTube highlight link — finished matches */}
+      <YouTubeLink matchId={match.id} isFinished={isFinished} />
 
       {/* Venue */}
       {match.venue && (

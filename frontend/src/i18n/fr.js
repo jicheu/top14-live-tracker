@@ -104,6 +104,10 @@ const fr = {
     champions_cup:        'Champions Cup',
     challenge_cup:        'Challenge Cup',
   },
+  youtube: {
+    watchHighlights: '📺 Voir le résumé',
+    loading: '📺 Résumé à venir…',
+  },
 };
 
 export default fr;

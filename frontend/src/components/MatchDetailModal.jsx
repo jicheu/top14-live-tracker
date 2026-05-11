@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext.jsx';
 import ScoreEvent from './ScoreEvent.jsx';
+import YouTubeLink from './YouTubeLink.jsx';
 
 export default function MatchDetailModal({ match, onClose }) {
   const { t } = useLanguage();
@@ -103,6 +104,8 @@ export default function MatchDetailModal({ match, onClose }) {
           {match.venue && (
             <div className="modal-venue">{t.ui.venue} : {match.venue}</div>
           )}
+
+          <YouTubeLink matchId={match.id} isFinished={['FT', 'Match Finished'].includes(match.status)} />
         </div>
 
         {/* Score timeline */}
