@@ -64,6 +64,7 @@ function shortName(name) {
 
 /**
  * Search YouTube for a highlight/summary video for a finished match.
+ * Tries multiple query variants to maximise hit rate while minimising quota use.
  *
  * @param {object} match  - match row from DB (home_team_name, away_team_name, match_date, competition)
  * @returns {{ videoId: string, title: string } | null}
@@ -81,9 +82,6 @@ export async function searchMatchSummary(match) {
   const away = shortName(away_team_name);
   const compLabel = competitionLabel(competition);
 
-  // Short, YouTube-friendly query matching how channels title their recap videos
-  const query = `${home} ${away} résumé ${compLabel}`;
-
   // publishedAfter: one day before match date to be safe (videos sometimes
   // appear shortly before/after midnight)
   let publishedAfter;
@@ -93,45 +91,62 @@ export async function searchMatchSummary(match) {
     publishedAfter = d.toISOString().split('T')[0] + 'T00:00:00Z';
   }
 
-  const params = new URLSearchParams({
-    part:       'snippet',
-    q:          query,
-    type:       'video',
-    order:      'relevance',
-    maxResults: '5',
-    key:        apiKey,
-    ...(publishedAfter ? { publishedAfter } : {}),
-  });
+  // Try multiple query variants in priority order; stop on first hit.
+  // This covers the two common title styles used by Canal+, France TV, LNR, etc.:
+  //   "Résumé | Toulouse - Clermont | Top 14"
+  //   "Toulouse vs Clermont highlights Top 14"
+  const queries = [
+    `${home} ${away} résumé ${compLabel}`,
+    `${away} ${home} résumé ${compLabel}`,
+    `${home} ${away} highlights ${compLabel}`,
+    `${away} ${home} highlights ${compLabel}`,
+  ];
 
-  console.log(`[YouTube] Searching: "${query}"${publishedAfter ? ` after ${publishedAfter}` : ''}`);
+  for (const query of queries) {
+    const params = new URLSearchParams({
+      part:       'snippet',
+      q:          query,
+      type:       'video',
+      order:      'relevance',
+      maxResults: '5',
+      key:        apiKey,
+      ...(publishedAfter ? { publishedAfter } : {}),
+    });
 
-  try {
-    const resp = await fetch(`${YOUTUBE_API}?${params}`);
-    if (!resp.ok) {
-      const body = await resp.text();
-      console.error(`[YouTube] API error ${resp.status}: ${body}`);
+    console.log(`[YouTube] Searching: "${query}"${publishedAfter ? ` after ${publishedAfter}` : ''}`);
+
+    try {
+      const resp = await fetch(`${YOUTUBE_API}?${params}`);
+      if (!resp.ok) {
+        const body = await resp.text();
+        console.error(`[YouTube] API error ${resp.status}: ${body}`);
+        return null; // Hard error — don't retry other variants
+      }
+
+      const data = await resp.json();
+      const items = data.items || [];
+
+      if (items.length === 0) {
+        console.log(`[YouTube] No results for: "${query}" — trying next variant`);
+        continue;
+      }
+
+      const first = items[0];
+      const videoId = first.id?.videoId;
+      const title   = first.snippet?.title;
+
+      if (!videoId) continue;
+
+      console.log(`[YouTube] Found: "${title}" (${videoId})`);
+      return { videoId, title };
+    } catch (err) {
+      console.error('[YouTube] Fetch error:', err.message);
       return null;
     }
-
-    const data = await resp.json();
-    const items = data.items || [];
-    if (items.length === 0) {
-      console.log(`[YouTube] No results for: ${query}`);
-      return null;
-    }
-
-    const first = items[0];
-    const videoId = first.id?.videoId;
-    const title   = first.snippet?.title;
-
-    if (!videoId) return null;
-
-    console.log(`[YouTube] Found: "${title}" (${videoId})`);
-    return { videoId, title };
-  } catch (err) {
-    console.error('[YouTube] Fetch error:', err.message);
-    return null;
   }
+
+  console.log(`[YouTube] No results found for ${home} vs ${away} across all query variants`);
+  return null;
 }
 
 function competitionLabel(competition) {

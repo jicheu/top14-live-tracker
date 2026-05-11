@@ -34,15 +34,16 @@ export default function YouTubeLink({ matchId, isFinished }) {
 
   if (!isFinished) return null;
 
-  // Show placeholder while fetching OR when the search found nothing yet.
-  // Only hide once we have a confirmed result to show.
-  if (loading || !result?.videoId) {
+  if (loading) {
     return (
       <span className="youtube-link youtube-link--loading">
         {t.youtube.loading}
       </span>
     );
   }
+
+  // Result received but no video found — render nothing
+  if (!result?.videoId) return null;
 
   return (
     <a
